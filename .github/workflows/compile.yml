@@ -1,9 +1,15 @@
 on:
   - push
 
-steps:
-  - uses: actions/checkout@main
-  - uses: actions/setup-dotnet@v1
-    with:
-      dotnet-version: '4.6.x'
-  - run: dotnet build DiscordNotifier
+name: compile
+
+jobs:
+  build:
+    name: Build project
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@main
+      - uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: '4.6.x'
+      - run: dotnet build DiscordNotifier
