@@ -6,10 +6,10 @@ name: compile
 jobs:
   build:
     name: Build project
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@main
       - uses: actions/setup-dotnet@v1
         with:
-          dotnet-version: '5.0.x'
+          dotnet-version: '4.6.x'
       - run: dotnet build DiscordNotifier.csproj
