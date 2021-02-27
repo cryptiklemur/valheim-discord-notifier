@@ -14,8 +14,16 @@ namespace DiscordNotifier.Patches
             private static void Postfix(ref ZNet __instance)
             {
                 var onServer = new List<long>();
-                foreach (var player in __instance.GetPlayerList())
+                foreach (var peer in __instance.m_peers)
                 {
+                    ZNet.PlayerInfo player = new ZNet.PlayerInfo();
+                    player.m_characterID = peer.m_characterID;
+                    player.m_name = peer.m_playerName;
+                    player.m_host = peer.m_socket.GetHostName();
+                    player.m_publicPosition = peer.m_publicRefPos;
+                    if (player.m_publicPosition)
+                        player.m_position = peer.m_refPos;
+
                     // If the player is new, trigger an OnPlayerJoined event
                     if (!players.ContainsKey(player.m_characterID.userID)) ValheimEventHandler.OnPlayerJoined(player);
                     onServer.Add(player.m_characterID.userID);
@@ -35,9 +43,9 @@ namespace DiscordNotifier.Patches
         [HarmonyPatch(typeof(ZNet), "LoadWorld")]
         internal class LoadWorld
         {
-            private static void Postfix()
+            private static void Postfix(ref ZNet __instance)
             {
-                ValheimEventHandler.OnServerStarted();
+                ValheimEventHandler.OnServerStarted(Main.configFetchAndShowIp.Value ? Utils.FetchIPAddress() : null);
             }
         }
 
@@ -74,22 +82,15 @@ namespace DiscordNotifier.Patches
 
                 // If dead, and not in deadPlayers, add to deadPlayers and create event
                 // If dead, and in deadPlayers, do nothing
-                // If not dead, and in deadPlayers, remove, and create event
+                // If not dead, and in deadPlayers, remove
                 // If not dead, and not in deadPlayers, do nothing
                 if (dead)
                 {
                     if (deadPlayers.Contains(zdoID.userID)) return;
-                    Main.StaticLogger.LogInfo($"{zdoID} died");
                     deadPlayers.Add(zdoID.userID);
                     ValheimEventHandler.OnPlayerDeath(getPlayerInfo(__instance, zdoID));
                 }
-                else
-                {
-                    if (!deadPlayers.Contains(zdoID.userID)) return;
-                    Main.StaticLogger.LogInfo($"{zdoID} respawned");
-                    deadPlayers.Remove(zdoID.userID);
-                    ValheimEventHandler.OnPlayerRespawn(getPlayerInfo(__instance, zdoID));
-                }
+                else if (deadPlayers.Contains(zdoID.userID)) deadPlayers.Remove(zdoID.userID);
             }
 
             private static void Prefix(ref ZNet __instance)

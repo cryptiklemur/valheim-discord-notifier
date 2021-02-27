@@ -22,6 +22,7 @@ namespace DiscordNotifier
 
         public static ConfigEntry<string> configWebhookUrl;
         public static ConfigEntry<bool> configEnabled;
+        public static ConfigEntry<bool> configFetchAndShowIp;
         public static ConfigEntry<bool> configTrackAllUsers;
         public static Dictionary<ValheimEvent, ConfigEntry<bool>> configEvents = new Dictionary<ValheimEvent, ConfigEntry<bool>>();
 
@@ -37,6 +38,7 @@ namespace DiscordNotifier
             StaticLogger = Logger;
 
             configEnabled = Config.Bind("General", "Enabled", true, "Is the plugin enabled?");
+            configFetchAndShowIp = Config.Bind("General", "FetchAndShowIp", false, "Should the plugin attempt to get the server IP and post to the webhook");
             configWebhookUrl = Config.Bind("General", "WebhookUrl", "", "Enter the Webhook URL from discord here.");
             configTrackAllUsers = Config.Bind("General", "TrackAllUsers", false, "Should the plugin track all the users on the server, or just you. If running as the server, this is ignored.");
 
@@ -54,7 +56,7 @@ namespace DiscordNotifier
 
         private void Awake()
         {
-            if (configEnabled.Value)
+            if (configEnabled.Value && configWebhookUrl.Value.Length > 0)
             {
                 harmony.PatchAll(assembly);
                 Logger.LogMessage($"{AUTHOR}'s {MODNAME} (v{VERSION}) has started");

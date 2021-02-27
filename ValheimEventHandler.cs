@@ -1,4 +1,8 @@
-﻿namespace DiscordNotifier
+﻿using System;
+using UnityEngine;
+using UnityEngine.PlayerLoop;
+
+namespace DiscordNotifier
 {
     public enum ValheimEvent
     {
@@ -7,7 +11,7 @@
         OnPlayerJoined,
         OnPlayerDisconnected,
         OnPlayerDeath,
-        OnPlayerRespawn,
+        OnPlayerMessage,
     }
 
     public class ValheimEventHandler
@@ -15,11 +19,18 @@
         private static bool IsTrackingAll() => Main.zNet.IsServer() || Main.configTrackAllUsers.Value;
         private static bool IsTrackingUserId(ZDOID zdoId) => !Main.zNet.IsServer() && !Main.configTrackAllUsers.Value && Player.m_localPlayer.GetZDOID().userID == zdoId.userID;
 
-        public static void OnServerStarted()
+        public static void OnServerStarted(string ipAddress = null)
         {
             if (!Main.configEvents[ValheimEvent.OnServerStarted].Value) return;
 
-            Utils.PostMessage("Server has started");
+            if (ipAddress == null)
+            {
+                Utils.PostMessage("Server has started");
+            }
+            else
+            {
+                Utils.PostMessage("Server has started at: " + ipAddress);
+            }
         }
 
 
@@ -36,6 +47,7 @@
             if (!Main.configEvents[ValheimEvent.OnPlayerJoined].Value) return;
             if (playerInfo.m_characterID.IsNone() || !IsTrackingAll() && !IsTrackingUserId(playerInfo.m_characterID)) return;
 
+            Main.StaticLogger.LogInfo($"Player joined: {playerInfo.m_name} ({playerInfo.m_characterID})");
             Utils.PostMessage($"{playerInfo.m_name} has joined the server!");
         }
 
@@ -44,6 +56,7 @@
             if (!Main.configEvents[ValheimEvent.OnPlayerDisconnected].Value) return;
             if (playerInfo.m_characterID.IsNone() || !IsTrackingAll() && !IsTrackingUserId(playerInfo.m_characterID)) return;
 
+            Main.StaticLogger.LogInfo($"Player left: {playerInfo.m_name} ({playerInfo.m_characterID})");
             Utils.PostMessage($"{playerInfo.m_name} has left the server!");
         }
 
@@ -52,14 +65,31 @@
             if (!Main.configEvents[ValheimEvent.OnPlayerDeath].Value) return;
             if (playerInfo.m_characterID.IsNone() || !IsTrackingAll() && !IsTrackingUserId(playerInfo.m_characterID)) return;
 
+            Main.StaticLogger.LogInfo($"Player died: {playerInfo.m_name} ({playerInfo.m_characterID})");
             Utils.PostMessage($"{playerInfo.m_name} has died!");
         }
-        public static void OnPlayerRespawn(ZNet.PlayerInfo playerInfo)
+        public static void OnPlayerMessage(Talker.Type type, string user, string message, Vector3 pos)
         {
-            if (!Main.configEvents[ValheimEvent.OnPlayerRespawn].Value) return;
-            if (playerInfo.m_characterID.IsNone() || !IsTrackingAll() && !IsTrackingUserId(playerInfo.m_characterID)) return;
+            if (!Main.configEvents[ValheimEvent.OnPlayerMessage].Value) return;
 
-            Utils.PostMessage($"{playerInfo.m_name} has respawned!");
+            switch (type)
+            {
+                case Talker.Type.Whisper:
+                    break;
+                case Talker.Type.Normal:
+                    Utils.PostMessage(message, $"{user} said");
+                    break;
+                case Talker.Type.Shout:
+                    Utils.PostMessage(message.ToUpper(), $"{user} yelled");
+                    break;
+                case Talker.Type.Ping:
+                    Utils.PostMessage($"Location: ({pos.x}x, {pos.y}y, {pos.z}z)", $"{user} pinged");
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(type), type, null);
+            }
+
+
         }
     }
 }
