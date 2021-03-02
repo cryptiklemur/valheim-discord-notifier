@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using HarmonyLib;
 
@@ -6,37 +7,55 @@ namespace DiscordNotifier.Patches
 {
     internal class ZNetPatch
     {
-        internal static Dictionary<long, ZNet.PlayerInfo> players = new Dictionary<long, ZNet.PlayerInfo>();
+        private static readonly List<long> ConnectedPlayers = new List<long>();
 
-        [HarmonyPatch(typeof(ZNet), "SendPlayerList")]
-        internal class SendPlayerList
+        public static ZNet.PlayerInfo GetPlayerInfoFromPeer(ZNetPeer peer)
+        {
+            ZNet.PlayerInfo player = new ZNet.PlayerInfo();
+            player.m_characterID = peer.m_characterID;
+            player.m_name = peer.m_playerName;
+            player.m_host = peer.m_socket.GetHostName();
+            player.m_publicPosition = peer.m_publicRefPos;
+            if (player.m_publicPosition)
+                player.m_position = peer.m_refPos;
+
+            return player;
+        }
+
+        [HarmonyPatch(typeof(ZNet), "Awake")]
+        internal class Awake
         {
             private static void Postfix(ref ZNet __instance)
             {
-                var onServer = new List<long>();
-                foreach (var peer in __instance.m_peers)
-                {
-                    ZNet.PlayerInfo player = new ZNet.PlayerInfo();
-                    player.m_characterID = peer.m_characterID;
-                    player.m_name = peer.m_playerName;
-                    player.m_host = peer.m_socket.GetHostName();
-                    player.m_publicPosition = peer.m_publicRefPos;
-                    if (player.m_publicPosition)
-                        player.m_position = peer.m_refPos;
 
-                    // If the player is new, trigger an OnPlayerJoined event
-                    if (!players.ContainsKey(player.m_characterID.userID)) ValheimEventHandler.OnPlayerJoined(player);
-                    onServer.Add(player.m_characterID.userID);
-                    players[player.m_characterID.userID] = player;
-                }
+                ChatPatch.IsChatMessageIgnored("", "Testing message");
+                if (!__instance.IsServer()) Main.StaticLogger.LogError("This mod does not work on the client!");
+            }
+        }
 
-                // If the player is no longer on the server, remove them from the list, and trigger an OnPlayerDisconnected event
-                var toRemove = players.Values.Where(player => !onServer.Contains(player.m_characterID.userID)).ToList();
-                toRemove.ForEach(player =>
-                {
-                    ValheimEventHandler.OnPlayerDisconnected(player);
-                    players.Remove(player.m_characterID.userID);
-                });
+        [HarmonyPatch(typeof(ZNet), "RPC_CharacterID")]
+        internal class RPC_CharacterID
+        {
+            private static void Postfix(ref ZNet __instance, ref ZRpc rpc)
+            {
+                ZNetPeer peer = __instance.GetPeer(rpc);
+                if (peer.m_characterID.IsNone() || !ZNet.instance.IsServer() || !__instance.IsConnected(peer.m_uid) || ConnectedPlayers.Contains(peer.m_characterID.userID)) return;
+                ConnectedPlayers.Add(peer.m_characterID.userID);
+
+                ValheimEventHandler.OnPlayerJoined(GetPlayerInfoFromPeer(peer));
+            }
+        }
+
+        [HarmonyPatch(typeof(ZNet), "RPC_Disconnect")]
+        internal class RPC_Disconnect
+        {
+            private static void Prefix(ref ZNet __instance, ref ZRpc rpc)
+            {
+                ZNetPeer peer = __instance.GetPeer(rpc);
+                if (peer.m_characterID.IsNone() || !ZNet.instance.IsServer() || !__instance.IsConnected(peer.m_uid)) return;
+                ConnectedPlayers.Remove(peer.m_uid);
+
+                ValheimEventHandler.OnPlayerDisconnected(GetPlayerInfoFromPeer(peer));
             }
         }
 
@@ -45,7 +64,9 @@ namespace DiscordNotifier.Patches
         {
             private static void Postfix(ref ZNet __instance)
             {
-                ValheimEventHandler.OnServerStarted(Main.configFetchAndShowIp.Value ? Utils.FetchIPAddress() : null);
+                if (!__instance.IsServer()) return;
+                
+                ValheimEventHandler.OnServerStarted(Main.Configuration.FetchAndShowIp.Value ? Utils.FetchIPAddress() : null);
             }
         }
 
@@ -54,31 +75,30 @@ namespace DiscordNotifier.Patches
         {
             private static void Prefix(ref ZNet __instance)
             {
-                if (__instance.IsServer())
-                {
-                    ValheimEventHandler.OnServerStopped();
-                }
+                if (!__instance.IsServer()) return;
+
+                ValheimEventHandler.OnServerStopped();
             }
         }
 
         [HarmonyPatch(typeof(ZNet), "SendPeriodicData")]
         internal class SendPeriodicData
         {
-            private static List<long> deadPlayers = new List<long>();
+            private static readonly List<long> DeadPlayers = new List<long>();
 
-            private static ZNet.PlayerInfo getPlayerInfo(ZNet __instance, ZDOID zdoId)
+            private static ZNet.PlayerInfo GetPlayerInfo(ZNet __instance, ZDOID zdoId)
             {
                 return __instance.GetPlayerList().Find(player => player.m_characterID.userID == zdoId.userID);
             }
 
-            private static void process(ZNet __instance, ZDOID zdoID)
+            private static void Process(ZNet __instance, ZDOID zdoID)
             {
                 if (zdoID.IsNone()) return;
 
-                ZDO zdo = Main.zdoMan.GetZDO(zdoID);
+                var zdo = ZDOMan.instance.GetZDO(zdoID);
                 if (zdo == null) return;
 
-                bool dead = zdo.GetBool("dead", false);
+                var dead = zdo.GetBool("dead", false);
 
                 // If dead, and not in deadPlayers, add to deadPlayers and create event
                 // If dead, and in deadPlayers, do nothing
@@ -86,27 +106,18 @@ namespace DiscordNotifier.Patches
                 // If not dead, and not in deadPlayers, do nothing
                 if (dead)
                 {
-                    if (deadPlayers.Contains(zdoID.userID)) return;
-                    deadPlayers.Add(zdoID.userID);
-                    ValheimEventHandler.OnPlayerDeath(getPlayerInfo(__instance, zdoID));
+                    if (DeadPlayers.Contains(zdoID.userID)) return;
+                    DeadPlayers.Add(zdoID.userID);
+                    ValheimEventHandler.OnPlayerDeath(GetPlayerInfo(__instance, zdoID));
                 }
-                else if (deadPlayers.Contains(zdoID.userID)) deadPlayers.Remove(zdoID.userID);
+                else if (DeadPlayers.Contains(zdoID.userID)) DeadPlayers.Remove(zdoID.userID);
             }
 
             private static void Prefix(ref ZNet __instance)
             {
                 if (!__instance.IsServer()) return;
 
-                if (Player.m_localPlayer != null)
-                {
-                    process(__instance, Player.m_localPlayer.GetZDOID());
-                }
-                
-                foreach (var cur in __instance.GetPeers())
-                {
-                    if (!cur.IsReady()) continue;
-                    process(__instance, cur.m_characterID);
-                }
+                foreach (var cur in __instance.m_peers.Where(cur => cur.IsReady())) Process(__instance, cur.m_characterID);
             }
         }
     }

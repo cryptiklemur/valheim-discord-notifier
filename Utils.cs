@@ -1,6 +1,7 @@
-﻿using System.CodeDom;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using LitJson;
 
 namespace DiscordNotifier
 {
@@ -9,21 +10,16 @@ namespace DiscordNotifier
         public static void PostMessage(string message, string username = null)
         {
             Main.StaticLogger.LogMessage($"Posting message to webhook: {message}");
-            var httpWebRequest = (HttpWebRequest)WebRequest.Create(Main.configWebhookUrl.Value);
+            var httpWebRequest = (HttpWebRequest) WebRequest.Create(Main.Configuration.WebhookUrl.Value);
             httpWebRequest.ContentType = "application/json";
             httpWebRequest.Method = "POST";
 
             using (var streamWriter = new StreamWriter(httpWebRequest.GetRequestStream()))
             {
-                var json = $"{{\"content\":\"{message}\"";
-                if (username != null)
-                {
-                    json += $", \"username\": \"{username}\"";
-                }
+                var body = new Dictionary<string, string> {{"content", message}};
+                if (username != null) body.Add("username", username);
 
-                json += "}";
-
-                streamWriter.Write(json);
+                streamWriter.Write(JsonMapper.ToJson(body));
             }
 
             httpWebRequest.GetResponseAsync();

@@ -16,12 +16,9 @@ namespace DiscordNotifier
 
     public class ValheimEventHandler
     {
-        private static bool IsTrackingAll() => Main.zNet.IsServer() || Main.configTrackAllUsers.Value;
-        private static bool IsTrackingUserId(ZDOID zdoId) => !Main.zNet.IsServer() && !Main.configTrackAllUsers.Value && Player.m_localPlayer.GetZDOID().userID == zdoId.userID;
-
         public static void OnServerStarted(string ipAddress = null)
         {
-            if (!Main.configEvents[ValheimEvent.OnServerStarted].Value) return;
+            if (!Main.Configuration.Events[ValheimEvent.OnServerStarted].Value) return;
 
             if (ipAddress == null)
             {
@@ -36,7 +33,7 @@ namespace DiscordNotifier
 
         public static void OnServerStopped()
         {
-            if (!Main.configEvents[ValheimEvent.OnServerStopped].Value) return;
+            if (!Main.Configuration.Events[ValheimEvent.OnServerStopped].Value) return;
 
             Utils.PostMessage("Server has stopped");
         }
@@ -44,33 +41,39 @@ namespace DiscordNotifier
 
         public static void OnPlayerJoined(ZNet.PlayerInfo playerInfo)
         {
-            if (!Main.configEvents[ValheimEvent.OnPlayerJoined].Value) return;
-            if (playerInfo.m_characterID.IsNone() || !IsTrackingAll() && !IsTrackingUserId(playerInfo.m_characterID)) return;
+            if (!Main.Configuration.Events[ValheimEvent.OnPlayerJoined].Value || playerInfo.m_characterID.IsNone()) return;
 
-            Main.StaticLogger.LogInfo($"Player joined: {playerInfo.m_name} ({playerInfo.m_characterID})");
-            Utils.PostMessage($"{playerInfo.m_name} has joined the server!");
+            Utils.PostMessage(
+                Main.Configuration.EventMessages[ValheimEvent.OnPlayerJoined].Value
+                    .Replace("{{username}}", playerInfo.m_name)
+                    .Replace("{{userId}}", playerInfo.m_characterID.userID.ToString())
+            );
         }
 
         public static void OnPlayerDisconnected(ZNet.PlayerInfo playerInfo)
         {
-            if (!Main.configEvents[ValheimEvent.OnPlayerDisconnected].Value) return;
-            if (playerInfo.m_characterID.IsNone() || !IsTrackingAll() && !IsTrackingUserId(playerInfo.m_characterID)) return;
+            if (!Main.Configuration.Events[ValheimEvent.OnPlayerDisconnected].Value || playerInfo.m_characterID.IsNone()) return;
 
-            Main.StaticLogger.LogInfo($"Player left: {playerInfo.m_name} ({playerInfo.m_characterID})");
-            Utils.PostMessage($"{playerInfo.m_name} has left the server!");
+            Utils.PostMessage(
+                Main.Configuration.EventMessages[ValheimEvent.OnPlayerDisconnected].Value
+                    .Replace("{{username}}", playerInfo.m_name)
+                    .Replace("{{userId}}", playerInfo.m_characterID.userID.ToString())
+            );
         }
 
         public static void OnPlayerDeath(ZNet.PlayerInfo playerInfo)
         {
-            if (!Main.configEvents[ValheimEvent.OnPlayerDeath].Value) return;
-            if (playerInfo.m_characterID.IsNone() || !IsTrackingAll() && !IsTrackingUserId(playerInfo.m_characterID)) return;
+            if (!Main.Configuration.Events[ValheimEvent.OnPlayerDeath].Value || playerInfo.m_characterID.IsNone()) return;
 
-            Main.StaticLogger.LogInfo($"Player died: {playerInfo.m_name} ({playerInfo.m_characterID})");
-            Utils.PostMessage($"{playerInfo.m_name} has died!");
+            Utils.PostMessage(
+                Main.Configuration.EventMessages[ValheimEvent.OnPlayerDeath].Value
+                    .Replace("{{username}}", playerInfo.m_name)
+                    .Replace("{{userId}}", playerInfo.m_characterID.userID.ToString())
+            );
         }
         public static void OnPlayerMessage(Talker.Type type, string user, string message, Vector3 pos)
         {
-            if (!Main.configEvents[ValheimEvent.OnPlayerMessage].Value) return;
+            if (!Main.Configuration.Events[ValheimEvent.OnPlayerMessage].Value) return;
 
             switch (type)
             {
