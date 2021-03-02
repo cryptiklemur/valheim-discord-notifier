@@ -5,11 +5,6 @@
 This mod works better when running on the server. 
 It may work alright on the client, but it was not intended for this.
 
-## Table of Contents
-1. [Installation](#Installation-(manual))
-2. [Default Config](#Config)
-3. [Changelog](#Changelog)
-
 ## Installation (manual)
 
 1. Extract the archive into a folder. **Do not extract into the game folder.**
