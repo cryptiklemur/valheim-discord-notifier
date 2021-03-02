@@ -1,4 +1,4 @@
-# Valheim Discord Notifier
+﻿# Valheim Discord Notifier
 
 ### Note
 
@@ -22,21 +22,3 @@ The config is fairly well documented.
 
 Under `Events`, you can toggle which events you want to receive on the webhook
 Under `General` are the basic config settings. Make sure you set the "WebhookUrl" here.
-
-## Changelog
-
-#### 0.0.3
-
-- Fixing death leave/join bug again, maybe?
-- Adding filters to chat events (By Username, by Regex)
-- Adding the ability to customize join, leave, and death messages
-
-#### 0.0.2
-
-- Fixing death leave/join bug
-- Removing respawn event
-- Adding chat event
-- Added the ability to show the IP on server startup message
-
-#### 0.0.1
-- Initial release, unstable until tested more

@@ -99,6 +99,7 @@
   <ItemGroup>
     <Content Include=".gitignore" />
     <Content Include="icon.png" />
+    <Content Include="NexusReadme.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
