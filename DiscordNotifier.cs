@@ -12,7 +12,7 @@ namespace DiscordNotifier
         public const string MODNAME = "Discord Notifier";
         public const string AUTHOR = "CryptikLemur";
         public const string GUID = "CryptikLemur_DiscordNotifier";
-        public const string VERSION = "0.0.3.5";
+        public const string VERSION = "0.0.4.0";
 
         internal Harmony harmony;
         internal Assembly assembly;

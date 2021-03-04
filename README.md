@@ -2,8 +2,7 @@
 
 ### Note
 
-This mod works better when running on the server. 
-It may work alright on the client, but it was not intended for this.
+This mod only works on servers (Dedicated and Non-Dedicated). 
 
 ## Table of Contents
 1. [Installation](#Installation-(manual))
@@ -13,8 +12,8 @@ It may work alright on the client, but it was not intended for this.
 ## Installation (manual)
 
 1. Extract the archive into a folder. **Do not extract into the game folder.**
-2. Move the contents of `plugins` folder into `<GameDirectory>\Bepinex\plugins`.
-3. Start the server (or game), it will generate automatically an configuration file into `<GameDirectory>\Bepinex\config`
+2. Move the contents of `DiscordNotifier` folder into `<GameDirectory>\Bepinex\plugins` (should create a `<GameDirectory>Bepinex\plugins\DiscordNotifier` directory)
+3. Start the server (or game), it will generate automatically an configuration file into `<GameDirectory>\Bepinex\config\CryptikLemur_DiscordNotifier.cfg` and `<GameDirectory>\Bepinex\config\CryptikLemur_DiscordNotifier.messages.json`
 
 ## Config
 
@@ -24,6 +23,13 @@ Under `Events`, you can toggle which events you want to receive on the webhook
 Under `General` are the basic config settings. Make sure you set the "WebhookUrl" here.
 
 ## Changelog
+
+#### 0.0.4
+
+- Added new CryptikLemur_DiscordNotifier.messages.json, adds ability to have multiple messages for join, leave, and death
+- Added messages for whispers
+- Added ability to toggle different type of chat messages
+- Added ability to toggle ToUpper on shouts
 
 #### 0.0.3
 
