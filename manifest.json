@@ -1,7 +1,7 @@
 ﻿{
   "name": "DiscordNotifier",
   "description": "Sends messages to Discord using webhooks",
-  "version_number": "0.0.4",
+  "version_number": "0.0.5",
   "website_url": "https://github.com/aequasi/valheim-discord-notifier",
   "dependencies": [
     "denikson-BepInExPack_Valheim-5.4.600"

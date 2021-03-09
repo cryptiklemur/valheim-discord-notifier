@@ -24,6 +24,10 @@ Under `General` are the basic config settings. Make sure you set the "WebhookUrl
 
 ## Changelog
 
+#### 0.0.5
+
+- Added messages for OnServerStart and OnServerStop
+
 #### 0.0.4
 
 - Added new CryptikLemur_DiscordNotifier.messages.json, adds ability to have multiple messages for join, leave, and death

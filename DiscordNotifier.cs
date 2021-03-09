@@ -12,10 +12,7 @@ namespace DiscordNotifier
         public const string MODNAME = "Discord Notifier";
         public const string AUTHOR = "CryptikLemur";
         public const string GUID = "CryptikLemur_DiscordNotifier";
-        public const string VERSION = "0.0.4.0";
-
-        internal Harmony harmony;
-        internal Assembly assembly;
+        public const string VERSION = "0.0.5.0";
 
         internal static ManualLogSource StaticLogger;
 
@@ -23,20 +20,16 @@ namespace DiscordNotifier
 
         private void Awake()
         {
+            var harmony = new Harmony(GUID);
+            var assembly = Assembly.GetExecutingAssembly();
+
             StaticLogger = Logger;
             Configuration = new Configuration(Config);
 
             if (!Configuration.Enabled.Value || Configuration.WebhookUrl.Value.Length <= 0) return;
 
-            harmony = new Harmony(GUID);
-            assembly = Assembly.GetExecutingAssembly();
-
             harmony.PatchAll(assembly);
             Logger.LogMessage($"{AUTHOR}'s {MODNAME} (v{VERSION}) has started");
-        }
-        private void OnDestroy()
-        {
-            if (Configuration.Enabled.Value) harmony.UnpatchSelf();
         }
     }
 }
